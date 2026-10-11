@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,11 +59,12 @@ fun MainContent(viewModel: PhotoGalleryViewModel = viewModel()) {
     var showSearch by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
+    var showFavorites by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("PhotoGallery") },
+                title = { Text(if (showFavorites) "Избранное" else "PhotoGallery") },
                 actions = {
                     IconButton(onClick = { showSearch = !showSearch }) {
                         Icon(Icons.Default.Search, contentDescription = "Поиск")
@@ -74,12 +77,18 @@ fun MainContent(viewModel: PhotoGalleryViewModel = viewModel()) {
                         onDismissRequest = { showMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Избранное") },
-                            onClick = { showMenu = false }
+                            text = { Text(if (showFavorites) "Все фото" else "Избранное") },
+                            onClick = {
+                                showFavorites = !showFavorites
+                                showMenu = false
+                            }
                         )
                         DropdownMenuItem(
-                            text = { Text("Удалить всё") },
-                            onClick = { showMenu = false }
+                            text = { Text("Удалить из избранного") },
+                            onClick = {
+                                viewModel.clearFavorites()
+                                showMenu = false
+                            }
                         )
                     }
                 }
@@ -87,7 +96,7 @@ fun MainContent(viewModel: PhotoGalleryViewModel = viewModel()) {
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            if (showSearch) {
+            if (showSearch && !showFavorites) {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -97,7 +106,12 @@ fun MainContent(viewModel: PhotoGalleryViewModel = viewModel()) {
                     placeholder = { Text("Фильтр по автору") }
                 )
             }
-            PhotoGrid(viewModel, query)
+
+            if (showFavorites) {
+                FavoritesGrid(viewModel)
+            } else {
+                PhotoGrid(viewModel, query)
+            }
         }
     }
 }
@@ -121,6 +135,29 @@ fun PhotoGrid(viewModel: PhotoGalleryViewModel, query: String) {
             AsyncImage(
                 model = photo.downloadUrl,
                 contentDescription = photo.author,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clickable { viewModel.addFavorite(photo) }
+            )
+        }
+    }
+}
+
+@Composable
+fun FavoritesGrid(viewModel: PhotoGalleryViewModel) {
+    val favorites by viewModel.favorites.observeAsState(emptyList())
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Gray)
+    ) {
+        items(favorites) { fav ->
+            AsyncImage(
+                model = fav.url,
+                contentDescription = fav.author,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
