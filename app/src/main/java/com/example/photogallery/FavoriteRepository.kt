@@ -14,7 +14,13 @@ class FavoriteRepository(application: Application) {
 
     fun add(photo: PicsumPhoto) {
         scope.launch {
-            dao.insert(FavoritePhoto(photo.id, photo.author, photo.downloadUrl))
+            dao.insert(
+                FavoritePhoto(
+                    id = photo.id.toString(),
+                    author = photo.title,
+                    url = "https://placehold.co/400x400/3498DB/FFFFFF/png?text=${photo.id}"
+                )
+            )
         }
     }
 

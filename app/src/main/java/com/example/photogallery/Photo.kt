@@ -3,10 +3,9 @@ package com.example.photogallery
 import com.squareup.moshi.Json
 
 data class PicsumPhoto(
-    val id: String,
-    val author: String,
-    val width: Int,
-    val height: Int,
-    val url: String,
-    @Json(name = "download_url") val downloadUrl: String
+    val id: Int,
+    @Json(name = "albumId") val albumId: Int,
+    val title: String,
+    @Json(name = "url") val downloadUrl: String,
+    @Json(name = "thumbnailUrl") val thumbnailUrl: String
 )

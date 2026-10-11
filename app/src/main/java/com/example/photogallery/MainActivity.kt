@@ -103,7 +103,7 @@ fun MainContent(viewModel: PhotoGalleryViewModel = viewModel()) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(8.dp),
-                    placeholder = { Text("Фильтр по автору") }
+                    placeholder = { Text("Фильтр по названию") }
                 )
             }
 
@@ -122,7 +122,7 @@ fun PhotoGrid(viewModel: PhotoGalleryViewModel, query: String) {
     val filteredPhotos = if (query.isBlank()) {
         photos
     } else {
-        photos.filter { it.author.contains(query, ignoreCase = true) }
+        photos.filter { it.title.contains(query, ignoreCase = true) }
     }
 
     LazyVerticalGrid(
@@ -133,8 +133,8 @@ fun PhotoGrid(viewModel: PhotoGalleryViewModel, query: String) {
     ) {
         items(filteredPhotos) { photo ->
             AsyncImage(
-                model = photo.downloadUrl,
-                contentDescription = photo.author,
+                model = "https://placehold.co/400x400/3498DB/FFFFFF/png?text=${photo.id}",
+                contentDescription = photo.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -156,7 +156,7 @@ fun FavoritesGrid(viewModel: PhotoGalleryViewModel) {
     ) {
         items(favorites) { fav ->
             AsyncImage(
-                model = fav.url,
+                model = "https://placehold.co/400x400/3498DB/FFFFFF/png?text=${fav.id}",
                 contentDescription = fav.author,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

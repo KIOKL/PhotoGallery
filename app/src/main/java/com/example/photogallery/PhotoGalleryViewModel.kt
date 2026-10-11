@@ -23,8 +23,11 @@ class PhotoGalleryViewModel(application: Application) : AndroidViewModel(applica
     fun fetchPhotos() {
         viewModelScope.launch {
             try {
-                _photos.value = FlickrApiClient.service.getPhotos()
-            } catch (e: Exception) { e.printStackTrace() }
+                val all = FlickrApiClient.service.getPhotos()
+                _photos.value = all.take(20)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
