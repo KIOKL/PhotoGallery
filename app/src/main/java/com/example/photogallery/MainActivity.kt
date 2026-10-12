@@ -2,6 +2,7 @@ package com.example.photogallery
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DropdownMenu
@@ -33,6 +35,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -60,69 +63,93 @@ fun MainContent(viewModel: PhotoGalleryViewModel = viewModel()) {
     var query by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
     var showFavorites by remember { mutableStateOf(false) }
+    var selectedPhoto by remember { mutableStateOf<PicsumPhoto?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (showFavorites) "Избранное" else "PhotoGallery") },
-                actions = {
-                    IconButton(onClick = { showSearch = !showSearch }) {
-                        Icon(Icons.Default.Search, contentDescription = "Поиск")
+    val photo = selectedPhoto
+
+    if (photo != null) {
+        // Экран просмотра одного фото
+        PhotoDetailScreen(
+            photo = photo,
+            onBack = { selectedPhoto = null },
+            onAddFavorite = { viewModel.addFavorite(photo) }
+        )
+    } else {
+        // Главный экран со списком
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(if (showFavorites) "Избранное" else "PhotoGallery") },
+                    actions = {
+                        IconButton(onClick = { showSearch = !showSearch }) {
+                            Icon(Icons.Default.Search, contentDescription = "Поиск")
+                        }
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Меню")
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(if (showFavorites) "Все фото" else "Избранное") },
+                                onClick = {
+                                    showFavorites = !showFavorites
+                                    showMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Удалить из избранного") },
+                                onClick = {
+                                    viewModel.clearFavorites()
+                                    showMenu = false
+                                }
+                            )
+                        }
                     }
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Меню")
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(if (showFavorites) "Все фото" else "Избранное") },
-                            onClick = {
-                                showFavorites = !showFavorites
-                                showMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Удалить из избранного") },
-                            onClick = {
-                                viewModel.clearFavorites()
-                                showMenu = false
-                            }
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            if (showSearch && !showFavorites) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    placeholder = { Text("Фильтр по названию") }
                 )
             }
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                if (showSearch && !showFavorites) {
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        placeholder = { Text("Фильтр по названию или id") }
+                    )
+                }
 
-            if (showFavorites) {
-                FavoritesGrid(viewModel)
-            } else {
-                PhotoGrid(viewModel, query)
+                if (showFavorites) {
+                    FavoritesGrid(viewModel)
+                } else {
+                    PhotoGrid(
+                        viewModel = viewModel,
+                        query = query,
+                        onPhotoClick = { selectedPhoto = it }
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun PhotoGrid(viewModel: PhotoGalleryViewModel, query: String) {
+fun PhotoGrid(
+    viewModel: PhotoGalleryViewModel,
+    query: String,
+    onPhotoClick: (PicsumPhoto) -> Unit
+) {
     val photos by viewModel.photos.collectAsState()
     val filteredPhotos = if (query.isBlank()) {
         photos
     } else {
-        photos.filter { it.title.contains(query, ignoreCase = true) }
+        photos.filter {
+            it.title.contains(query, ignoreCase = true) ||
+                    it.id.toString().contains(query)
+        }
     }
 
     LazyVerticalGrid(
@@ -139,7 +166,7 @@ fun PhotoGrid(viewModel: PhotoGalleryViewModel, query: String) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .clickable { viewModel.addFavorite(photo) }
+                    .clickable { onPhotoClick(photo) }
             )
         }
     }
@@ -162,6 +189,69 @@ fun FavoritesGrid(viewModel: PhotoGalleryViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PhotoDetailScreen(
+    photo: PicsumPhoto,
+    onBack: () -> Unit,
+    onAddFavorite: () -> Unit
+) {
+    var showMenu by remember { mutableStateOf(false) }
+
+    // Обработка системной кнопки «назад» — возвращаемся к сетке
+    BackHandler { onBack() }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = photo.title,
+                        maxLines = 1
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Меню")
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Добавить в избранное") },
+                            onClick = {
+                                onAddFavorite()
+                                showMenu = false
+                            }
+                        )
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = "https://placehold.co/600x600/3498DB/FFFFFF/png?text=${photo.id}",
+                contentDescription = photo.title,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
