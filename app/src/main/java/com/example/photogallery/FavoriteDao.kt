@@ -1,18 +1,19 @@
 package com.example.photogallery
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FavoriteDao {
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(photo: FavoritePhoto)
 
     @Query("SELECT * FROM favorites")
-    fun getAll(): LiveData<List<FavoritePhoto>>
+    fun getAll(): Flow<List<FavoritePhoto>>
 
     @Query("DELETE FROM favorites")
     suspend fun deleteAll()

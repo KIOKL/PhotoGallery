@@ -32,7 +32,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -160,7 +159,7 @@ fun PhotoGrid(
     ) {
         items(filteredPhotos) { photo ->
             AsyncImage(
-                model = "https://placehold.co/400x400/3498DB/FFFFFF/png?text=${photo.id}",
+                model = "https://robohash.org/${photo.id}.png?size=400x400&set=set1",
                 contentDescription = photo.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -174,7 +173,7 @@ fun PhotoGrid(
 
 @Composable
 fun FavoritesGrid(viewModel: PhotoGalleryViewModel) {
-    val favorites by viewModel.favorites.observeAsState(emptyList())
+    val favorites by viewModel.favorites.collectAsState()
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         modifier = Modifier
@@ -183,7 +182,7 @@ fun FavoritesGrid(viewModel: PhotoGalleryViewModel) {
     ) {
         items(favorites) { fav ->
             AsyncImage(
-                model = "https://placehold.co/400x400/3498DB/FFFFFF/png?text=${fav.id}",
+                model = "https://robohash.org/${fav.id}.png?size=400x400&set=set1",
                 contentDescription = fav.author,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -247,7 +246,7 @@ fun PhotoDetailScreen(
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
-                model = "https://placehold.co/600x600/3498DB/FFFFFF/png?text=${photo.id}",
+                model = "https://robohash.org/${photo.id}.png?size=600x600&set=set1",
                 contentDescription = photo.title,
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
