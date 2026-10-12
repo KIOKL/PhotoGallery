@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -68,14 +69,12 @@ fun MainContent(viewModel: PhotoGalleryViewModel = viewModel()) {
     val photo = selectedPhoto
 
     if (photo != null) {
-        // Экран просмотра одного фото
         PhotoDetailScreen(
             photo = photo,
             onBack = { selectedPhoto = null },
             onAddFavorite = { viewModel.addFavorite(photo) }
         )
     } else {
-        // Главный экран со списком
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -110,7 +109,7 @@ fun MainContent(viewModel: PhotoGalleryViewModel = viewModel()) {
                 )
             }
         ) { innerPadding ->
-            Box(modifier = Modifier.padding(innerPadding)) {
+            Column(modifier = Modifier.padding(innerPadding)) {
                 if (showSearch && !showFavorites) {
                     OutlinedTextField(
                         value = query,
@@ -118,7 +117,8 @@ fun MainContent(viewModel: PhotoGalleryViewModel = viewModel()) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
-                        placeholder = { Text("Фильтр по названию или id") }
+                        placeholder = { Text("Фильтр по названию или id") },
+                        singleLine = true
                     )
                 }
 
@@ -203,7 +203,6 @@ fun PhotoDetailScreen(
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
-    // Обработка системной кнопки «назад» — возвращаемся к сетке
     BackHandler { onBack() }
 
     Scaffold(
